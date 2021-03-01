@@ -9,7 +9,7 @@
 
 
 
-## IoC(Inversion of Control) / DI(Dependency Injection) : 제어의 역전 / 의존성 주입
+# IoC(Inversion of Control) / DI(Dependency Injection) : 제어의 역전 / 의존성 주입
 
 | 목차                                                         |
 | ------------------------------------------------------------ |
@@ -284,3 +284,331 @@
   - @Autowired 어노테이션은 Type, Id중 Type에 우선순위를 부여하여 할당하지만, @Resource어노테이션은  Type, Id중 Id에 우선순위를 부여하여 할당한다는 차이점이 있음
   - 인스턴스 명칭을 id mapping하는 것이 아니라, 다른 이름으로 id에 mapping하기 위해서는 @Autowired 어노테이션은 @Qualifier("pickBeanId")으로 지정가능하고, @Resource어노테이션은 @Resource(name="pickBeanId")로 가능하다.
 
+---
+
+---
+
+---
+
+---
+
+---
+
+# AOP(Aspect Oriented Programming) - 관점지향 프로그래밍
+
+- 코드 = 핵심 관심사(모듈별로 다른 코드) + 횡단 관심사(모듈별로 반복되어 중복해서 나타나는 코드)
+
+- **AOP : 모듈의 관심(핵심 관심)부분과 공통 로직(횡단 관심)을 분리하고, 핵심 관심이 실행될 때 공통로직을 "주입"하는 것**
+
+- Spring의 AOP의 핵심은 아래 세개로 요약 할 수 있다.
+
+  - 스프링 AOP는 인터페이스(interface) 기반이다.
+  - 스프링 AOP는 프록시(proxy) 기반이다.
+  - 스프링 AOP는 런타임(runtime) 기반이다.
+
+- 메소드에 코드를 주입할 수 있는 곳은 아래의 5군데임
+
+  - Around(메소드 전 구역)
+
+  - Befor(메소드 시작 전)
+
+  - After(메소드 종료 후)
+
+  - AfterReturning(메소드 정상 종료 후)
+
+  - AfterThrowing(메소드에서 예외가 발생하면서 종료된 후)
+
+    ex) 
+
+    ```java
+    public Class Boy{
+        public void runSomething(){
+            // 횡단 관심사중 Befor
+            System.out,println( "문을 열고 집에 들어간다." );
+            
+            try{
+                // 핵심 관심사부분.
+                System.out,println( " 집에서 관심있는 작업을 한다." );
+            }catch(Exception ex){
+                // 횡단 관심사중 AfterThrowing
+                if(ex.getMessage().equals("집에 불남")){
+                    System.out,println( " 119에 신고한다." );
+                }
+            }finally{
+                // 횡단 관심사중 After
+                System.out,println( "소등하고 잠을 잔다." );
+            }
+            
+            // 횡단 관심사중 AfterReturning
+            System.out,println( "문을 잠그고 집을 나선다." );
+        }
+    }
+    ```
+
+
+
+---
+
+### AOP가 적용되지 않은 코드
+
+```java
+// Boy.java
+public Class Boy{
+    public void runSomething(){
+        System.out,println( "문을 열고 집에 들어간다." );
+        
+        try{
+            System.out,println( "남성이 집에서 관심있는 작업을 한다!" );
+        }catch(Exception ex){
+            if(ex.getMessage().equals("집에 불남")){
+                System.out,println( " 119에 신고한다." );
+            }
+        }finally{
+            System.out,println( "소등하고 잠을 잔다." );
+        }
+        
+        System.out,println( "문을 잠그고 집을 나선다." );
+    }
+}
+
+
+// Girl.java
+public Class Girl{
+    public void runSomething(){
+        System.out,println( "문을 열고 집에 들어간다." );
+        
+        try{
+            System.out,println( "여성이 집에서 관심있는 작업을 한다!" );
+        }catch(Exception ex){
+            if(ex.getMessage().equals("집에 불남")){
+                System.out,println( " 119에 신고한다." );
+            }
+        }finally{
+            System.out,println( "소등하고 잠을 잔다." );
+        }
+        
+        System.out,println( "문을 잠그고 집을 나선다." );
+    }
+}
+
+
+// Start.java
+public class Start{
+    public static void main(String[] args){
+        Boy boy = new Boy();
+        Girl gril = new Gril();
+        
+        boy.runSomething();
+        gril.runSomething();
+    }
+}
+```
+
+Boy, Girl Class의 runSomething메소드에서 try~catch의 **핵심 관심사**를 제외한 모든 코드가 일치하는 것을 알 수 있다. 
+
+---
+
+### Annotation으로 AOP구현
+
+```java
+// MyAspect.java
+@Aspect
+public class MyAspect {
+	@Before("execution(* runSomething())")
+	public void before(JoinPoint joinPoint) {
+		System.out,println( "문을 열고 집에 들어간다." );
+	}
+}
+
+
+// Person.java
+public interface Person{
+    void runSomething();
+}
+
+
+// Boy.java
+public Class Boy implements Person{
+    public void runSomething(){ System.out,println( "남성이 집에서 관심있는 작업을 한다!" ); }
+}
+
+
+// Girl.java
+public Class Girl implements Person{
+    public void runSomething(){ System.out,println( "여성이 집에서 관심있는 작업을 한다!" ); }
+}
+
+
+// Start.java
+public class Start{
+    public static void main(String[] args){
+        ApplicationContext context = new ClassPathXmlApplicationContext("aop.xml");
+        
+        Boy boy = context.getBean("boy", Person.class);
+        Girl gril = context.getBean("gril", Person.class);
+        
+        boy.runSomething();
+        gril.runSomething();
+    }
+}
+```
+
+```xml
+// aop.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+  xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:aop="http://www.springframework.org/schema/aop"
+
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+    http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<aop:aspectj-autoproxy />
+	<!--<bean class="org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator" /> -->
+
+	<bean id="myAspect" class="aop002.MyAspect" />
+	<bean id="boy" class="aop002.Boy" />
+	<bean id="girl" class="aop002.Girl" />
+</beans>
+```
+
+Aspect annotation은 해당 클래스를 이제 AOP에서 사용하겠다는 의미이고,  Befor annotation은 대상 메소드 실행 전에 이 매소드를 실행하겠다는 의미이다. 기존의 AOP분리 전 하나의 Boy.java가 4개의 파일로 분할해서 개발을 해야하지만, 추가 개발과 유지보수 관점에서 매우 많은 이득을 얻었다.  AOP를 적용하면서 Boy.java에 단일 책임 원칙(SRP)을 자연스럽게 적용하게 된 것이다. 이를 통해 개발자들은 공통로직(횡단 관심사)는 신경쓰지 않고 핵심 관심사만을 코딩하면 되는 것.
+
+
+
+추가 설명 : aop.xml의 **<aop:aspectj-autoproxy />**을 나누어 생각하면, aop / aspect(관점) / j(자바) / auto(자동) / proxy(프록시) 풀어서 말하면 Spring프레임워크에게 AOP 프록시를 자동으로 사용하라고 알려주는 지시자인 것. 
+AOP의 용어정리
+
+| 용어      | 영한 사전        | 의미                     |
+| --------- | ---------------- | ------------------------ |
+| Aspect    | 관점, 측면, 양상 | Advisor의 집합체!        |
+| Advice    | 조언, 충고       | 언제, 무엇을!            |
+| JoinPoint | 결합점           | 연결 가능한 지점!        |
+| Pointcut  | 자르는 점        | Aspect 적용 위치 지정자! |
+
+- Aspect : Advisor의 집합체!
+
+  Aspect은 여러개의 Advice와 여러개의 Pointcut의 결합체를 의미한다. Advice는 [언제, 무엇을]를 의미하고, Pointcut는[어디에]를 의미하고 있으니 Aspect는 언제, 어디서, 무엇을 이라는 뜻이 된다. 
+
+- Advice : 언제, 무엇을!
+
+  Pointcut에 언제, 무엇을 적용할지 정의한 메소드. Advice를 타깃 객체의 타깃 메소드에 적용될 부가 기능이라고 해석하는 책도 있음
+
+  **@Before**("execution(* runSomething())")에 사용하며 해당 코드에서는 메소드를 Pointcut실행 "전"에 실행하라는 의미
+
+- JoinPoint : 연결 가능한 지점!
+
+  "Aspect 적용이 가능한 모든 지점"을 의미하며 코드의 public void before(***JoinPoint joinPoint***)에서 사용된다. JoinPoint는 실체는 런타임마다 다르다.  만약 boy.runSomething()메소드를 호출한 상태라면 JoinPoint는 boy객체의 runSomething()메소드가 되며, girl.runSomething()메소드를 호출한 상태라면 JoinPoint는 girl객체의 runSomething()메소드가 된다.
+
+- Pointcut : Aspect 적용 위치 지정자!
+
+  @Before("execution(*** runSomething()**)")에서 * runSomething() 부분이 Pointcut이며, 타깃클래스의 타깃 메서드 지정자이다. 선언하는 방식은 아래의 정규식과 같다.
+
+  [접근 제한자] ***리턴 타입***  [패키지&클래스] ***메소드이름(파라미터)*** [throws 예외] **// []는 생략가능을 의미**
+
+  ex) public void aop.Boy.runSimething() 
+
+  - 접근 지정자(public) / 리턴 타입(void) / 패키지.클래스(aop.Boy) / 메소드이름(runSimething) / 파라미터(X) / 예외(X)
+
+  ex) * runSomething()
+
+  - 접근 지정자(아무거나) / 리턴 타입(* 아무거나) / 패키지.클래스(모든 패키지, 모든 클래스) / 메소드이름(runSimething) / 파라미터(X) / 예외(X)
+
+  
+
+---
+
+### POJO와 XML기반의 AOP구현
+
+```java
+// MyAspect.java
+public class MyAspect {
+	public void before(JoinPoint joinPoint) {
+		System.out,println( "문을 열고 집에 들어간다." );
+	}
+}
+
+
+// Person.java
+public interface Person{
+    void runSomething();
+}
+
+
+// Boy.java
+public Class Boy implements Person{
+    public void runSomething(){ System.out,println( "남성이 집에서 관심있는 작업을 한다!" ); }
+}
+
+
+// Girl.java
+public Class Girl implements Person{
+    public void runSomething(){ System.out,println( "여성이 집에서 관심있는 작업을 한다!" ); }
+}
+
+
+// Start.java
+public class Start{
+    public static void main(String[] args){
+        ApplicationContext context = new ClassPathXmlApplicationContext("aop.xml");
+        
+        Boy boy = context.getBean("boy", Person.class);
+        Girl gril = context.getBean("gril", Person.class);
+        
+        boy.runSomething();
+        gril.runSomething();
+    }
+}
+```
+
+```xml
+// aop.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+  xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:aop="http://www.springframework.org/schema/aop"
+
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+    http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<aop:aspectj-autoproxy />
+	<!--<bean class="org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator" /> -->
+
+	<bean id="myAspect" class="aop002.MyAspect" />
+	<bean id="boy" class="aop002.Boy" />
+	<bean id="girl" class="aop002.Girl" />
+    
+    
+	<aop:config>
+		<aop:pointcut expression="execution(* runSomething())" id="iampc"/>
+		<aop:aspect ref="myAspect">			
+			<aop:before method="before" pointcut-ref="iampc" />
+			<aop:after method="lockDoor" pointcut-ref="iampc" />
+		</aop:aspect>
+	</aop:config>
+</beans>
+```
+
+MyAspect.java코드에 직접적으로 AOP를 명시하는 것이 아니라, XML파일의 aop테그를 이용하여 AOP를 구현 할 수 있다. 횡단 관심사의 befor이나 after변경이 존재할 시 직접적으로 소스코드를 수정하는 것이 아니라 XML값을 변경할 수도 있으므로 리빌딩을 하지 않아도 되다는 장점이 있다. 
+
+---
+
+----
+
+---
+
+---
+
+---
+
+# PSA(Protable Service Abstraction) - 일관성 있는 서비스 추상화
+
+Spring 프레임워크에서는 서비스 추상화를 위해 다양한 어댑터를 제공하고있다. 예를 들어, OXM(Object XML Mapping:객체와 XML매핑) 기술만 하더라고 Castor, JAXB, XMLBeans, JiBX등 다양한 기술이 있고, 이 다양한 기술들이 제공하는 API는 모두 제각각이다. 스프링은 제각각인 API를 위한 어댑터를 제공함으로써 실제로 어떤 OXM 기술을 쓰든 일관된 방식으로 코드를 작성할 수 있게한다. 또한 기존의 OXM기술에서 다른 OXM기술로 변경할 때 큰 변화 없이 세부 기술을 교체해서 사용할 수 있게 해주고있다. 이처럼 서비스 추상화를 해주면서 그것도 일관성 있는 방식을 제공한다고 해서 이를 PSA(일관성 있는 서비스 추상화)라고 한다. Spring은 OXM뿐 아니라, ORM, 캐시, 트랜잭션등 여러 기술에대해 PSA를 제공하고 있다.
